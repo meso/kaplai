@@ -24,7 +24,7 @@ export interface Config {
 
 const defaultConfig: Config = {
     lastOpenedProject: null,
-    preferredVersion: "4000.0",
+    preferredVersion: "3001.0",
     debugLevel: null,
     autoFormat: true,
     funFormat: false,

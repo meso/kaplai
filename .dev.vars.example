@@ -1,0 +1,7 @@
+# Cloudflare AI Gateway configuration (Unified Billing)
+# Copy this file to .dev.vars and fill in your values
+
+CF_ACCOUNT_ID=your_cloudflare_account_id
+AI_GATEWAY_NAME=kaplai
+CF_API_TOKEN=your_cloudflare_api_token
+LLM_MODEL=anthropic/claude-sonnet-4-5

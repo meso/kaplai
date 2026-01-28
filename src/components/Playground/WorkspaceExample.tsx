@@ -1,7 +1,11 @@
+import * as Tabs from "@radix-ui/react-tabs";
 import { Allotment } from "allotment";
-import type { FC } from "react";
+import { type FC, useState } from "react";
 import { useMediaQuery } from "react-responsive";
+import { AIChat } from "../../features/AIChat";
 import { MonacoEditor } from "../../features/Editor/components/MonacoEditor.tsx";
+import { useProject } from "../../features/Projects/stores/useProject.ts";
+import { useEditor } from "../../hooks/useEditor.ts";
 import { allotmentStorage } from "../../util/allotmentStorage.ts";
 import { cn } from "../../util/cn";
 import { scrollbarSize } from "../../util/scrollbarSize.ts";
@@ -21,6 +25,11 @@ type Props = {
 export const WorkspaceExample: FC<Props> = (props) => {
     const isWidescreen = useMediaQuery({ query: "(min-width: 900px)" });
     const { getAllotmentSize, setAllotmentSize } = allotmentStorage("example");
+    const [activeTab, setActiveTab] = useState<"ai" | "code">("ai");
+
+    const getMainFile = useProject((state) => state.getMainFile);
+    const updateFile = useProject((state) => state.updateFile);
+    const { run, setEditorValue } = useEditor();
 
     const { scrollbarThinHeight } = scrollbarSize();
     const assetBrewHeight = 72 + scrollbarThinHeight();
@@ -29,6 +38,25 @@ export const WorkspaceExample: FC<Props> = (props) => {
         document.documentElement.classList.toggle("select-none", true);
     const handleDragEnd = () =>
         document.documentElement.classList.toggle("select-none", false);
+
+    const handleCodeGenerated = (newCode: string) => {
+        const mainFile = getMainFile();
+        if (mainFile) {
+            // Update the file in the store
+            updateFile(mainFile.path, newCode);
+            // Update the editor
+            setEditorValue(newCode);
+            // Run the game
+            run();
+            // Switch to code tab to show the result
+            setActiveTab("code");
+        }
+    };
+
+    const getCurrentCode = (): string => {
+        const mainFile = getMainFile();
+        return mainFile?.value ?? "";
+    };
 
     return (
         <div
@@ -50,32 +78,86 @@ export const WorkspaceExample: FC<Props> = (props) => {
                     key={`vertical-${props.isPortrait}`}
                 >
                     <Allotment.Pane snap>
-                        <Allotment
-                            vertical
-                            defaultSizes={getAllotmentSize("brew", [
-                                9999,
-                                assetBrewHeight,
-                            ])}
-                            onChange={e => setAllotmentSize("brew", e)}
-                            onDragStart={handleDragStart}
-                            onDragEnd={handleDragEnd}
-                            className="p-px pt-0"
+                        <Tabs.Root
+                            value={activeTab}
+                            onValueChange={(v) =>
+                                setActiveTab(v as "ai" | "code")}
+                            className="h-full flex flex-col"
                         >
-                            <Allotment.Pane>
-                                <MonacoEditor
-                                    onMount={props.onMount}
-                                />
-                            </Allotment.Pane>
-                            <Allotment.Pane
-                                className="pt-px"
-                                snap
-                                maxSize={assetBrewHeight + 1}
-                                minSize={assetBrewHeight}
-                                preferredSize={assetBrewHeight}
+                            {/* Tab List - larger touch targets for tablets */}
+                            <Tabs.List className="flex bg-base-200 border-b border-base-300">
+                                <Tabs.Trigger
+                                    value="ai"
+                                    className={cn(
+                                        "flex-1 px-4 py-3 sm:py-4 text-base sm:text-lg font-medium transition-colors",
+                                        "hover:bg-base-300/50 active:bg-base-300",
+                                        "data-[state=active]:bg-base-100 data-[state=active]:border-b-2 data-[state=active]:border-primary",
+                                    )}
+                                >
+                                    <span className="flex items-center justify-center gap-2">
+                                        <span className="text-xl">🤖</span>
+                                        <span>AI</span>
+                                    </span>
+                                </Tabs.Trigger>
+                                <Tabs.Trigger
+                                    value="code"
+                                    className={cn(
+                                        "flex-1 px-4 py-3 sm:py-4 text-base sm:text-lg font-medium transition-colors",
+                                        "hover:bg-base-300/50 active:bg-base-300",
+                                        "data-[state=active]:bg-base-100 data-[state=active]:border-b-2 data-[state=active]:border-primary",
+                                    )}
+                                >
+                                    <span className="flex items-center justify-center gap-2">
+                                        <span className="text-xl">📝</span>
+                                        <span>コード</span>
+                                    </span>
+                                </Tabs.Trigger>
+                            </Tabs.List>
+
+                            {/* Tab Content */}
+                            <Tabs.Content
+                                value="ai"
+                                className="flex-1 min-h-0"
                             >
-                                <AssetBrew />
-                            </Allotment.Pane>
-                        </Allotment>
+                                <AIChat
+                                    currentCode={getCurrentCode()}
+                                    onCodeGenerated={handleCodeGenerated}
+                                />
+                            </Tabs.Content>
+
+                            <Tabs.Content
+                                value="code"
+                                className="flex-1 min-h-0 data-[state=inactive]:hidden"
+                                forceMount
+                            >
+                                <Allotment
+                                    vertical
+                                    defaultSizes={getAllotmentSize("brew", [
+                                        9999,
+                                        assetBrewHeight,
+                                    ])}
+                                    onChange={e => setAllotmentSize("brew", e)}
+                                    onDragStart={handleDragStart}
+                                    onDragEnd={handleDragEnd}
+                                    className="p-px pt-0"
+                                >
+                                    <Allotment.Pane>
+                                        <MonacoEditor
+                                            onMount={props.onMount}
+                                        />
+                                    </Allotment.Pane>
+                                    <Allotment.Pane
+                                        className="pt-px"
+                                        snap
+                                        maxSize={assetBrewHeight + 1}
+                                        minSize={assetBrewHeight}
+                                        preferredSize={assetBrewHeight}
+                                    >
+                                        <AssetBrew />
+                                    </Allotment.Pane>
+                                </Allotment>
+                            </Tabs.Content>
+                        </Tabs.Root>
                     </Allotment.Pane>
                     <Allotment.Pane snap>
                         <Allotment

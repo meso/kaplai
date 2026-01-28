@@ -15,6 +15,7 @@ import { AboutDialog } from "../About";
 import ConfigDialog from "../Config/ConfigDialog";
 import ProjectPreferences from "../Project/ProjectPreferences";
 import { ProjectBrowser } from "../ProjectBrowser";
+import { ShareQRDialog } from "../ShareQRDialog";
 import ExampleList from "../Toolbar/ExampleList";
 import { ConfirmDialog } from "../UI/ConfirmDialog";
 import { LoadingPlayground } from "./LoadingPlayground";
@@ -65,7 +66,7 @@ const Playground = () => {
 
     const loadNewProject = async () => {
         debug(0, "[init] No project found, creating a new one...");
-        await createNewProject("pj");
+        await createNewProject("ex");
         setLoadingProject(false);
     };
 
@@ -172,6 +173,7 @@ const Playground = () => {
                         <Tooltip id="global-open" isOpen={true} />
                         <ProjectBrowser />
                         <ProjectPreferences />
+                        <ShareQRDialog />
                         <WelcomeDialog isLoading={loadingEditor} />
                     </>
                 )}

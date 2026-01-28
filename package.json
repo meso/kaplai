@@ -1,10 +1,11 @@
 {
-  "name": "kaplayground",
+  "name": "kaplai",
   "type": "module",
-  "version": "2.4.3",
+  "version": "1.0.0",
   "bin": "scripts/cli.js",
   "scripts": {
     "dev": "vite dev",
+    "dev:full": "pnpm build && wrangler pages dev dist",
     "start": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
@@ -15,7 +16,7 @@
     "fmt": "dprint fmt",
     "check": "tsc --noEmit --p tsconfig.app.json",
     "dev:bin": "node scripts/cli.js --examples=fakeExamples",
-    "prepare": "cd kaplay && pnpm i && cd .. && npm run generate:lib && npm run generate:examples && npm run generate:versions",
+    "prepare": "git submodule update --init && pnpm -C kaplay i && pnpm run generate:lib && pnpm run generate:examples && pnpm run generate:versions",
     "sandbox:build": "cd sandbox && vite build",
     "sandbox:deploy": "cd sandbox && wrangler pages deploy --branch=main",
     "neu": "neu"
@@ -41,6 +42,7 @@
     "magic-string": "^0.30.11",
     "mime-types": "^3.0.1",
     "monaco-editor": "0.48.0",
+    "openai": "^6.16.0",
     "pako": "^2.1.0",
     "query-registry": "^3.0.1",
     "react": "^18.3.1",
