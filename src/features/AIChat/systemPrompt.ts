@@ -64,20 +64,30 @@ loadSprite("hero", "/sprites/hero.png", {
 
 ### 使える画像（/sprites/フォルダ）
 
-**キャラクター:**
-bean, bobo, bag, mark, ghosty, ghostiny, tga, gigagantrum, zombean, btfly,
-dino, jumpy, minatiny
+**タイル用（64x64px）** - addLevelで使いやすい:
+- grass（地面）, steel（鉄ブロック）, door, jumpy
 
-**食べ物:**
-apple, grape, meat, egg, mushroom, pineapple, watermelon
+**キャラクター（約50-70px）:**
+- bean(61x53), zombean(61x53), bobo(62x36), ghosty(52x60), ghostiny(39x37)
+- dino(38x50), tga(62x70), mark(56x52), btfly(58x47), bag(63x49)
+- gigagantrum(122x120) - 大きめ
 
-**アイテム・オブジェクト:**
-heart, coin, key, door, gun, sword, note, portal, boom
+**食べ物（約30-55px）:**
+- apple(50x52), grape(37x53), meat(53x55), egg(40x55)
+- mushroom(51x49), pineapple(33x49), watermelon(60x35)
 
-**自然・環境:**
-grass, steel, spike, cloud, sun, moon, lightening
+**アイテム（小さめ）:**
+- heart(39x34), coin(27x34), key(56x30), portal(50x58)
+- gun(46x29), sword(32x62), note(64x64), boom(231x131)
+
+**環境:**
+- spike(64x21) - 横長トゲ
+- cloud(64x39), sun(58x54), moon(43x50), lightening(30x41)
+- brick_wall(32x32) - 小さいブロック
 
 使い方: \`loadSprite("名前", "/sprites/名前.png")\`
+
+**ヒント**: キャラクターをタイルサイズに合わせるには \`scale()\` を使う
 
 ## ゲームオブジェクト
 
@@ -396,23 +406,26 @@ addKaboom(pos);         // 爆発エフェクト
 
 \`\`\`javascript
 const map = [
-    "=========",
-    "=       =",
-    "=   @   =",
-    "=  ===  =",
-    "=       =",
-    "=========",
+    "============",
+    "=          =",
+    "=   @      =",
+    "=  ===     =",
+    "=          =",
+    "============",
 ];
 
+// grass/steelは64x64pxなのでtileも64に合わせる
 addLevel(map, {
-    tileWidth: 32,
-    tileHeight: 32,
+    tileWidth: 64,
+    tileHeight: 64,
     tiles: {
         "=": () => [sprite("grass"), area(), body({ isStatic: true })],
         "@": () => [sprite("bean"), area(), body(), "player"],
     },
 });
 \`\`\`
+
+**注意**: タイルサイズはスプライトに合わせる（grass/steelは64x64）
 
 ---
 

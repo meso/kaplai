@@ -6,8 +6,8 @@
  * Environment variables:
  * - CF_ACCOUNT_ID: Cloudflare account ID
  * - AI_GATEWAY_NAME: AI Gateway name
- * - CF_API_TOKEN: Cloudflare API token (for Unified Billing) or provider API key (for BYO Key)
- * - LLM_MODEL: Model to use (e.g., "anthropic/claude-sonnet-4-5")
+ * - CF_API_TOKEN: Cloudflare API token (for Unified Billing)
+ * - LLM_MODEL: Model to use (e.g., "openai/gpt-5.2")
  */
 
 import OpenAI from "openai";
@@ -61,7 +61,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
         // Default model - can be overridden by request or environment
         const model = body.model || env.LLM_MODEL
-            || "anthropic/claude-sonnet-4-5";
+            || "openai/gpt-5.2";
 
         // Create OpenAI client with AI Gateway compat endpoint
         const client = new OpenAI({
@@ -71,10 +71,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         });
 
         // Create streaming response
+        // OpenAI models use max_completion_tokens, others use max_tokens
+        const isOpenAI = model.startsWith("openai/");
         const stream = await client.chat.completions.create({
             model,
             messages: body.messages,
-            max_tokens: 4096,
+            ...(isOpenAI
+                ? { max_completion_tokens: 4096 }
+                : { max_tokens: 4096 }),
             stream: true,
         });
 

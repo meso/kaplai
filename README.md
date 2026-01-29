@@ -82,13 +82,13 @@ Cloudflareダッシュボードで以下の環境変数を設定:
 CF_ACCOUNT_ID=your_cloudflare_account_id
 AI_GATEWAY_NAME=kaplai
 CF_API_TOKEN=your_cloudflare_api_token
-LLM_MODEL=anthropic/claude-sonnet-4-5
+LLM_MODEL=openai/gpt-5.2
 ```
 
 **対応モデル例:**
+- `openai/gpt-5.2` (推奨)
+- `openai/gpt-5.2-codex`
 - `anthropic/claude-sonnet-4-5`
-- `openai/gpt-4o`
-- `google-ai-studio/gemini-2.0-flash`
 - その他AI Gateway対応モデル
 
 ### 4. ビルド & デプロイ
@@ -140,9 +140,9 @@ LLM機能を無効化するには、Cloudflareダッシュボードで:
 
 ## 備考
 
-- LLMモデルは環境変数 `LLM_MODEL` で切り替え可能（デフォルト: `anthropic/claude-sonnet-4-5`）
+- LLMモデルは環境変数 `LLM_MODEL` で切り替え可能（デフォルト: `openai/gpt-5.2`）
 - AI Gatewayの `/compat` エンドポイントでOpenAI SDK互換のAPIを使用
-- AI Gatewayでアナリティクス、レート制限が利用可能
+- AI Gatewayでアナリティクス、レート制限、高速レスポンスが利用可能
 - ストリーミング対応でCloudflare Workersの30秒タイムアウトを回避
 
 ## クレジット
