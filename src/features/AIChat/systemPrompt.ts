@@ -24,10 +24,11 @@ export const SYSTEM_PROMPT = `あなたはKAPLAY（Kaboom.jsの後継）とい�
 3. **エラーが起きたら直してください**
    - エラーメッセージが渡されたら、問題を修正したコードを出力してください
 
-4. **タブレット専用のタッチ操作を使ってください**
-   - キーボード操作（onKeyPress, onKeyDownなど）は使わないでください
-   - 操作は画面端タップ（80px以内）で移動、中央タップでアクション
-   - 詳細は「入力（タブレット専用）」セクションを参照
+4. **タッチ＆キーボード両対応にしてください**
+   - マウス操作（onClick, mousePos, isMouseDown等）は使わないでください
+   - タッチ: 画面端ホールドで移動、中央タップでアクション
+   - キーボード: カーソルキーで移動、スペースでアクション
+   - 詳細は「入力（タッチ＆キーボード両対応）」セクションを参照
 
 ---
 
@@ -186,19 +187,20 @@ player.enterState("jump");
 player.state;                       // 現在の状態
 \`\`\`
 
-## 入力（タッチ＆マウス両対応）
+## 入力（タッチ＆キーボード両対応）
 
-**重要**: タブレット（80%）とPC（20%）の両方で遊ぶため、タッチとマウスの両方に対応してください。
-キーボード操作は使わないでください。
+**重要**: タブレット（80%）とPC（20%）の両方で遊ぶため、タッチとキーボードの両方に対応してください。
+マウス操作（onClick, mousePos, isMouseDown等）は使わないでください。
 
 ### 絶対に守るルール
 
-- **プレイヤーをタップ/クリック位置に直接移動させないでください**
+- **キャラクターをタップ位置に直接移動させないでください**
   - \`player.pos = pos\` や \`player.moveTo(pos)\` でタッチ位置に移動させるのは禁止
   - \`player.pos.x = pos.x\` や \`player.pos.y = pos.y\` でタッチ位置に合わせるのも禁止
   - タッチ位置に向かって移動（moveTo(pos, speed)）するのも禁止
 - **移動は必ず「画面端エリアを押している間だけ一定方向に動く」パターンを使ってください**
 - **例外なし**: ブロック崩しのパドルも画面端ホールドで左右移動させてください
+- **キーボードはカーソルキー（移動）とスペース（アクション）のみ使用してください**
 
 ### 入力API
 
@@ -208,20 +210,23 @@ onTouchStart((pos, touch) => { });  // 触れた瞬間（posはvec2）
 onTouchMove((pos, touch) => { });   // ドラッグ中
 onTouchEnd((pos, touch) => { });    // 離した瞬間
 
-// マウス用
-onClick(() => { });                 // クリック時
-mousePos();                         // マウス位置
-isMouseDown();                      // マウスボタン押下中か
+// キーボード用（PCユーザー向け）
+onKeyDown("left", () => { });       // 左キー押し続け中
+onKeyDown("right", () => { });      // 右キー押し続け中
+onKeyDown("up", () => { });         // 上キー押し続け中
+onKeyDown("down", () => { });       // 下キー押し続け中
+onKeyPress("space", () => { });     // スペースキー押した瞬間
+isKeyDown("left");                  // 左キー押下中か（boolean）
 \`\`\`
 
 ### 操作パターンの選び方
 
 ゲーム内容に合わせて、以下の2パターンから選んでください。
 
-- **移動あり** - 画面端ホールドで移動するゲーム（横スクロール、トップダウン、ブロック崩し、シューティング等）
+- **移動あり** - 画面端ホールド/カーソルキーで移動するゲーム（横スクロール、トップダウン、ブロック崩し、シューティング等）
 - **タップのみ** - 移動不要なゲーム（フラッピーバード風、自動スクロール+ジャンプ等）→ 操作エリア不要
 
-### 移動ありパターン（画面端ホールド）
+### 移動ありパターン
 
 ゲームに必要な方向だけ使ってください（左右のみ、上下のみ、上下左右すべて等）。
 不要な方向のエリアは表示しないでください。
@@ -230,6 +235,7 @@ isMouseDown();                      // マウスボタン押下中か
 const EDGE_SIZE = 100;
 let touchDir = vec2(0, 0);
 
+// タッチ操作
 onTouchStart((pos) => {
     // 左右が必要なゲームの場合:
     if (pos.x < EDGE_SIZE) touchDir.x = -1;
@@ -248,18 +254,15 @@ onTouchMove((pos) => {
 onTouchEnd(() => { touchDir = vec2(0, 0); });
 
 onUpdate(() => {
+    // タッチ操作
     if (touchDir.x !== 0 || touchDir.y !== 0) {
         player.move(touchDir.scale(300));
     }
-    if (isMouseDown()) {
-        const p = mousePos();
-        let md = vec2(0, 0);
-        if (p.x < EDGE_SIZE) md.x = -1;
-        else if (p.x > width() - EDGE_SIZE) md.x = 1;
-        if (p.y < EDGE_SIZE) md.y = -1;
-        else if (p.y > height() - EDGE_SIZE) md.y = 1;
-        if (md.x !== 0 || md.y !== 0) player.move(md.scale(300));
-    }
+    // キーボード操作（カーソルキー）
+    if (isKeyDown("left")) player.move(-300, 0);
+    if (isKeyDown("right")) player.move(300, 0);
+    if (isKeyDown("up")) player.move(0, -300);
+    if (isKeyDown("down")) player.move(0, 300);
 });
 
 // 操作エリア表示（押下中は濃くなる）- 必要な方向だけ描画
@@ -277,18 +280,15 @@ onDraw(() => {
 });
 \`\`\`
 
-中央タップでジャンプなどのアクションも必要な場合は追加:
+中央タップ/スペースキーでジャンプなどのアクションも必要な場合は追加:
 \`\`\`javascript
 onTouchStart((pos) => {
     if (pos.x >= EDGE_SIZE && pos.x <= width() - EDGE_SIZE) {
         if (player.isGrounded()) player.jump(400);
     }
 });
-onClick(() => {
-    const p = mousePos();
-    if (p.x >= EDGE_SIZE && p.x <= width() - EDGE_SIZE) {
-        if (player.isGrounded()) player.jump(400);
-    }
+onKeyPress("space", () => {
+    if (player.isGrounded()) player.jump(400);
 });
 \`\`\`
 
@@ -301,7 +301,7 @@ onClick(() => {
 onTouchStart(() => {
     player.jump(300);
 });
-onClick(() => {
+onKeyPress("space", () => {
     player.jump(300);
 });
 \`\`\`
