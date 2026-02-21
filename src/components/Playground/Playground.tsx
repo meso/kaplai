@@ -15,11 +15,9 @@ import { AboutDialog } from "../About";
 import ConfigDialog from "../Config/ConfigDialog";
 import ProjectPreferences from "../Project/ProjectPreferences";
 import { ProjectBrowser } from "../ProjectBrowser";
-import { ShareQRDialog } from "../ShareQRDialog";
 import ExampleList from "../Toolbar/ExampleList";
 import { ConfirmDialog } from "../UI/ConfirmDialog";
 import { LoadingPlayground } from "./LoadingPlayground";
-import { WelcomeDialog } from "./WelcomeDialog";
 import { WorkspaceExample } from "./WorkspaceExample";
 import { WorkspaceProject } from "./WorkspaceProject";
 
@@ -173,8 +171,6 @@ const Playground = () => {
                         <Tooltip id="global-open" isOpen={true} />
                         <ProjectBrowser />
                         <ProjectPreferences />
-                        <ShareQRDialog />
-                        <WelcomeDialog isLoading={loadingEditor} />
                     </>
                 )}
 

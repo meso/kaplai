@@ -136,10 +136,10 @@ export const AIChat = ({ currentCode, onCodeGenerated }: AIChatProps) => {
                         <div className="flex flex-col items-center justify-center h-full text-base-content/50 text-center p-4">
                             <div className="text-4xl mb-2">🎮</div>
                             <p className="text-sm">
-                                AIにゲームの作り方を教えてもらおう！
+                                AIにゲームを作ってもらおう
                             </p>
                             <p className="text-xs mt-2 opacity-70">
-                                例：「キャラクターを追加して」「ジャンプさせて」
+                                例：「ブロック崩しを作って」「シューティングゲームを作って」
                             </p>
                         </div>
                     )

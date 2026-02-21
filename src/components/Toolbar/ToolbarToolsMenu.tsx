@@ -8,7 +8,6 @@ import { ToolbarProjectDropdown } from "./ToolbarProjectDropdown";
 import { ToolbarSeparator } from "./ToolbarSeparator";
 import { AboutButton } from "./ToolButtons/AboutButton";
 import { ConfigButton } from "./ToolButtons/ConfigButton";
-import { ShareButton } from "./ToolButtons/ShareButton";
 
 const ToolbarToolItem: FC<PropsWithChildren> = ({ children }) => {
     return (
@@ -41,12 +40,6 @@ const ToolbarToolsMenu: FC = () => {
             <ToolbarToolItem>
                 <ToolbarSeparator className="hidden md:flex -mx-1 px-0" />
             </ToolbarToolItem>
-
-            {projectMode == "ex" && (
-                <ToolbarToolItem>
-                    <ShareButton />
-                </ToolbarToolItem>
-            )}
 
             <ToolbarToolItem>
                 <ToolbarProjectDropdown />
