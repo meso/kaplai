@@ -37,13 +37,13 @@ export const SYSTEM_PROMPT = `あなたはKAPLAY（Kaboom.jsの後継）とい�
 
 \`\`\`javascript
 kaplay({
-    width: 800,           // キャンバスの幅（省略可）
-    height: 600,          // キャンバスの高さ（省略可）
     background: [0, 0, 0], // 背景色 RGB
-    scale: 1,             // 表示スケール
     crisp: false,         // ピクセルアート向けシャープ表示
 });
 \`\`\`
+
+**重要**: width/heightは指定しないでください（プレビュー画面全体を使うため）。
+画面サイズは \`width()\` と \`height()\` で取得できます。
 
 ## アセット読み込み
 
@@ -191,6 +191,15 @@ player.state;                       // 現在の状態
 **重要**: タブレット（80%）とPC（20%）の両方で遊ぶため、タッチとマウスの両方に対応してください。
 キーボード操作は使わないでください。
 
+### 絶対に守るルール
+
+- **プレイヤーをタップ/クリック位置に直接移動させないでください**
+  - \`player.pos = pos\` や \`player.moveTo(pos)\` でタッチ位置に移動させるのは禁止
+  - \`player.pos.x = pos.x\` や \`player.pos.y = pos.y\` でタッチ位置に合わせるのも禁止
+  - タッチ位置に向かって移動（moveTo(pos, speed)）するのも禁止
+- **移動は必ず「画面端エリアを押している間だけ一定方向に動く」パターンを使ってください**
+- **例外なし**: ブロック崩しのパドルも画面端ホールドで左右移動させてください
+
 ### 入力API
 
 \`\`\`javascript
@@ -205,87 +214,98 @@ mousePos();                         // マウス位置
 isMouseDown();                      // マウスボタン押下中か
 \`\`\`
 
-### 標準操作パターン（単発アクション）
+### 操作パターンの選び方
+
+ゲーム内容に合わせて、以下の2パターンから選んでください。
+
+- **移動あり** - 画面端ホールドで移動するゲーム（横スクロール、トップダウン、ブロック崩し、シューティング等）
+- **タップのみ** - 移動不要なゲーム（フラッピーバード風、自動スクロール+ジャンプ等）→ 操作エリア不要
+
+### 移動ありパターン（画面端ホールド）
+
+ゲームに必要な方向だけ使ってください（左右のみ、上下のみ、上下左右すべて等）。
+不要な方向のエリアは表示しないでください。
 
 \`\`\`javascript
-const EDGE_SIZE = 80;  // 画面端の判定サイズ（px）
+const EDGE_SIZE = 100;
+let touchDir = vec2(0, 0);
 
-function handleInput(pos) {
-    if (pos.x < EDGE_SIZE) {
-        player.move(-200, 0);  // 左端 → 左移動
-    } else if (pos.x > width() - EDGE_SIZE) {
-        player.move(200, 0);   // 右端 → 右移動
-    } else if (pos.y < EDGE_SIZE) {
-        player.jump(400);      // 上端 → ジャンプ
-    } else {
-        // 中央 → アクション
-    }
-}
-
-// タッチ対応
-onTouchStart((pos) => handleInput(pos));
-// マウス対応
-onClick(() => handleInput(mousePos()));
-\`\`\`
-
-### 押し続ける操作（連続移動など）
-
-\`\`\`javascript
-const EDGE_SIZE = 80;
-let touchMovingLeft = false;
-let touchMovingRight = false;
-
-// タッチ対応（押し続け）
 onTouchStart((pos) => {
-    if (pos.x < EDGE_SIZE) {
-        touchMovingLeft = true;
-        touchMovingRight = false;
-    } else if (pos.x > width() - EDGE_SIZE) {
-        touchMovingRight = true;
-        touchMovingLeft = false;
-    }
+    // 左右が必要なゲームの場合:
+    if (pos.x < EDGE_SIZE) touchDir.x = -1;
+    else if (pos.x > width() - EDGE_SIZE) touchDir.x = 1;
+    // 上下が必要なゲームの場合:
+    if (pos.y < EDGE_SIZE) touchDir.y = -1;
+    else if (pos.y > height() - EDGE_SIZE) touchDir.y = 1;
 });
-onTouchEnd(() => {
-    touchMovingLeft = false;
-    touchMovingRight = false;
+onTouchMove((pos) => {
+    touchDir = vec2(0, 0);
+    if (pos.x < EDGE_SIZE) touchDir.x = -1;
+    else if (pos.x > width() - EDGE_SIZE) touchDir.x = 1;
+    if (pos.y < EDGE_SIZE) touchDir.y = -1;
+    else if (pos.y > height() - EDGE_SIZE) touchDir.y = 1;
 });
+onTouchEnd(() => { touchDir = vec2(0, 0); });
 
 onUpdate(() => {
-    // タッチ操作
-    if (touchMovingLeft) player.move(-300, 0);
-    if (touchMovingRight) player.move(300, 0);
-
-    // マウス操作（押し続け）
+    if (touchDir.x !== 0 || touchDir.y !== 0) {
+        player.move(touchDir.scale(300));
+    }
     if (isMouseDown()) {
-        const pos = mousePos();
-        if (pos.x < EDGE_SIZE) {
-            player.move(-300, 0);
-        } else if (pos.x > width() - EDGE_SIZE) {
-            player.move(300, 0);
-        }
+        const p = mousePos();
+        let md = vec2(0, 0);
+        if (p.x < EDGE_SIZE) md.x = -1;
+        else if (p.x > width() - EDGE_SIZE) md.x = 1;
+        if (p.y < EDGE_SIZE) md.y = -1;
+        else if (p.y > height() - EDGE_SIZE) md.y = 1;
+        if (md.x !== 0 || md.y !== 0) player.move(md.scale(300));
+    }
+});
+
+// 操作エリア表示（押下中は濃くなる）- 必要な方向だけ描画
+onDraw(() => {
+    // 左右エリア（左右移動があるゲームの場合）
+    drawRect({ pos: vec2(0, 0), width: EDGE_SIZE, height: height(), color: rgb(255, 255, 255), opacity: touchDir.x < 0 ? 0.2 : 0.08 });
+    drawText({ text: "◀", pos: vec2(EDGE_SIZE / 2, height() / 2), anchor: "center", size: 40, opacity: touchDir.x < 0 ? 0.6 : 0.3 });
+    drawRect({ pos: vec2(width() - EDGE_SIZE, 0), width: EDGE_SIZE, height: height(), color: rgb(255, 255, 255), opacity: touchDir.x > 0 ? 0.2 : 0.08 });
+    drawText({ text: "▶", pos: vec2(width() - EDGE_SIZE / 2, height() / 2), anchor: "center", size: 40, opacity: touchDir.x > 0 ? 0.6 : 0.3 });
+    // 上下エリア（上下移動があるゲームの場合）
+    drawRect({ pos: vec2(0, 0), width: width(), height: EDGE_SIZE, color: rgb(255, 255, 255), opacity: touchDir.y < 0 ? 0.2 : 0.08 });
+    drawText({ text: "▲", pos: vec2(width() / 2, EDGE_SIZE / 2), anchor: "center", size: 40, opacity: touchDir.y < 0 ? 0.6 : 0.3 });
+    drawRect({ pos: vec2(0, height() - EDGE_SIZE), width: width(), height: EDGE_SIZE, color: rgb(255, 255, 255), opacity: touchDir.y > 0 ? 0.2 : 0.08 });
+    drawText({ text: "▼", pos: vec2(width() / 2, height() - EDGE_SIZE / 2), anchor: "center", size: 40, opacity: touchDir.y > 0 ? 0.6 : 0.3 });
+});
+\`\`\`
+
+中央タップでジャンプなどのアクションも必要な場合は追加:
+\`\`\`javascript
+onTouchStart((pos) => {
+    if (pos.x >= EDGE_SIZE && pos.x <= width() - EDGE_SIZE) {
+        if (player.isGrounded()) player.jump(400);
+    }
+});
+onClick(() => {
+    const p = mousePos();
+    if (p.x >= EDGE_SIZE && p.x <= width() - EDGE_SIZE) {
+        if (player.isGrounded()) player.jump(400);
     }
 });
 \`\`\`
 
-### ドラッグ操作（パドルなど）
+### タップのみパターン（移動エリア不要）
+
+フラッピーバード風や自動スクロールゲームなど、移動操作が不要なゲーム用。
+**操作エリアは表示しないでください。**
 
 \`\`\`javascript
-let touchDragging = false;
-
-// タッチ対応
-onTouchStart(() => { touchDragging = true; });
-onTouchEnd(() => { touchDragging = false; });
-onTouchMove((pos) => {
-    if (touchDragging) paddle.pos.x = pos.x;
+onTouchStart(() => {
+    player.jump(300);
 });
-
-// マウス対応
-onUpdate(() => {
-    if (isMouseDown()) {
-        paddle.pos.x = mousePos().x;
-    }
+onClick(() => {
+    player.jump(300);
 });
 \`\`\`
+
 
 ## イベント
 
