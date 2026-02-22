@@ -141,10 +141,17 @@ const enemies = get("enemy");  // 配列で返る
 
 ### 物理・当たり判定
 - \`area()\` - 当たり判定を有効化
-- \`area({ shape: new Rect(vec2(0), 50, 50) })\` - カスタム形状
+- \`area({ shape: new Rect(vec2(0, 0), 幅, 高さ) })\` - カスタム形状（**必ず作成時に指定**）
 - \`body()\` - 重力・物理演算
 - \`body({ isStatic: true })\` - 動かない（地面用）
 - \`body({ gravityScale: 0 })\` - 重力無効
+
+**カスタム当たり判定の注意**:
+- 形状は必ず \`area({ shape: ... })\` の引数で指定してください
+- 作成後に \`obj.area.shape = ...\` で変更しないでください（バージョンによって動作しません）
+- \`anchor("center")\` を使う場合、Rectの位置は \`vec2(0, 0)\` にしてください（anchorが自動でセンタリングします）
+  - ✅ \`area({ shape: new Rect(vec2(0, 0), 100, 30) })\`
+  - ❌ \`area({ shape: new Rect(vec2(-50, -15), 100, 30) })\` ← 二重にずれる
 
 ### 動き
 - \`move(方向, 速度)\` - 指定方向に移動（LEFT, RIGHT, UP, DOWN, または角度）
@@ -357,13 +364,19 @@ scene("gameover", (finalScore) => {
     ]);
 
     onKeyPress("space", () => go("game"));
-    onClick(() => go("game"));
+    onTouchStart(() => go("game"));
 });
 
-// シーン切り替え
+// 最初のシーンを開始（必須）
 go("game");
-go("gameover", score);  // 引数を渡せる
+// go("gameover", score);  // 引数を渡せる
 \`\`\`
+
+**重要: リスタート可能なゲームの構造**:
+- ゲームオーバー→リスタートがあるゲームでは、**必ずゲームロジック全体を \`scene()\` の中に入れてください**
+- タッチ入力のグローバル変数（touchDir等）と、EDGE_SIZE定数だけは \`scene()\` の外に置いてOKです
+- \`go("game")\` でシーンを切り替えると、そのシーン内のオブジェクトがすべて破棄されてやり直せます
+- **やってはいけないパターン**: トップレベルにゲームコードを書いて、最後に空の \`scene("main", () => {})\` を定義 → \`go("main")\` しても何も表示されません
 
 ## タイミング
 
@@ -446,6 +459,76 @@ addLevel(map, {
 \`\`\`
 
 **注意**: タイルサイズはスプライトに合わせる（grass/steelは64x64）
+
+---
+
+## よくある間違い（必ず避けてください）
+
+### 1. 当たり判定の形状を作成後に変更する
+\`\`\`javascript
+// ❌ やってはいけない
+const player = add([sprite("bean"), area(), anchor("center")]);
+player.area.shape = new Rect(vec2(-25, -25), 50, 50);
+
+// ✅ 正しい（作成時に指定、位置はvec2(0, 0)）
+const player = add([
+    sprite("bean"),
+    area({ shape: new Rect(vec2(0, 0), 50, 50) }),
+    anchor("center"),
+]);
+\`\`\`
+
+### 2. トップレベルコードで scene() を混ぜる
+\`\`\`javascript
+// ❌ やってはいけない（go("main")で真っ暗になる）
+const player = add([sprite("bean"), pos(100, 100)]);
+onUpdate(() => { /* ... */ });
+scene("main", () => {});  // 空のシーン
+
+// ✅ 正しい（全コードをsceneの中に入れる）
+scene("game", () => {
+    const player = add([sprite("bean"), pos(100, 100)]);
+    onUpdate(() => { /* ... */ });
+});
+go("game");
+\`\`\`
+
+### 3. destroyAll() にコンポーネント名を渡す
+\`\`\`javascript
+// ❌ やってはいけない（タグではないので消えない）
+destroyAll("text");
+destroyAll("rect");
+
+// ✅ 正しい（タグを使う）
+add([text("Hello"), pos(100, 100), "ui-text"]);  // "ui-text"タグを付ける
+destroyAll("ui-text");  // タグで消す
+\`\`\`
+
+### 4. 定義した関数をイベントに接続し忘れる
+\`\`\`javascript
+// ❌ やってはいけない（restartが呼ばれない）
+const restart = () => { go("game"); };
+// ← onKeyPress や onTouchStart に接続していない！
+
+// ✅ 正しい（イベントに接続する）
+onKeyPress("space", () => go("game"));
+onTouchStart(() => go("game"));
+\`\`\`
+
+### 5. body()が定義済みのプロパティをカスタムコンポーネントで再定義する
+\`body()\` は \`vel\`（速度）や \`acc\`（加速度）などのプロパティを自動で追加します。
+カスタムコンポーネントで同じ名前を使うと「Duplicate component property」エラーになります。
+\`\`\`javascript
+// ❌ やってはいけない（body()のvelと衝突する）
+add([sprite("ball"), body(), { vel: vec2(0, 0) }]);
+
+// ✅ body()を使うなら、velはbody()のものを使う
+const ball = add([sprite("ball"), area(), body({ gravityScale: 0 })]);
+ball.vel = vec2(200, -300);  // body()のvelを直接設定
+
+// ✅ body()を使わず自分で物理を書くなら、別の名前にする
+add([sprite("ball"), area(), { speed: vec2(0, 0) }]);
+\`\`\`
 
 ---
 
